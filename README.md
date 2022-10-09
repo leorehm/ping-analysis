@@ -1,5 +1,5 @@
 # Ping Analyzer
-A simple script to analyze and display ping statistics from one or more ping transcripts. Examplary PowerShell ping transcripts included. Linux currently not supported. 
+A simple script to analyze and display ping statistics from one or more ping transcripts. Examplary PowerShell and Linux ping transcripts included.
 
 ## Usage
     $ python3 .\ping-analysis.py -h
