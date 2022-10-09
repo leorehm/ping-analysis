@@ -1,7 +1,7 @@
-## Ping Analyzer
+# Ping Analyzer
 A simple script to analyze and display ping statistics from one or more ping transcripts. Examplary PowerShell ping transcripts included. Linux currently not supported. 
 
-# Usage
+## Usage
     $ python .\ping-analysis.py -h
     usage: ping-analysis.py [-h] [-p {single,mult,both}] [-o OUT [OUT ...]] [--ma-window MA_WINDOW]
                             file [file ...]
@@ -18,14 +18,14 @@ A simple script to analyze and display ping statistics from one or more ping tra
     --ma-window MA_WINDOW
                             moving-average window in seconds; default = 20
 
-# Ping Transcipt in PowerShell
+## Ping Transcipt in PowerShell
     Start-Transcript -path .\ping-log.txt -Append; ping -t <host> | % {"{0} - {1}" -f (Get-Date),$_}
 
 - add `-S <ip>` to use a specific interface in windows
 - Exit the ping with `<Ctrl-C>`
 - Stop the transcript with `Stop-Transcript` or close the powershell window
 
-# Example
+## Example
     python .\ping-analysis.py .\example\ping-eth0.txt .\example\ping-wlan0.txt -p both -o .\example\single.png .\example\multi.png
 
 ![Single Graph](/example/single.png "Single Graph")
