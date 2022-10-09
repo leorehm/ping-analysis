@@ -17,12 +17,15 @@ A simple script to analyze and display ping statistics from one or more ping tra
     --ma-window MA_WINDOW
                             moving-average window in seconds; default = 20
 
-## Ping Transcipt in PowerShell
+## Ping Transciption
+### PowerShell
     Start-Transcript -path .\ping-log.txt -Append; ping -t <host> | % {"{0} - {1}" -f (Get-Date),$_}
 
 - add `-S <ip>` to use a specific interface in windows
-- Exit the ping with `<Ctrl-C>`
 - Stop the transcript with `Stop-Transcript` or close the powershell window
+
+### Linux/Bash
+    ping <host> | while read res; do echo "$(date +"%d.%m.%Y %T") - $res"; done >> ping-log.txt
 
 ## Example
 Comparing a powerline ehternet adapter to wifi - powerline seems to be working surprisingly well

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from shutil import ExecError
 import sys
 from os.path import basename
 import argparse
@@ -12,6 +13,8 @@ from matplotlib import ticker
 
 # TODO: UNIX/Linux support
 # TODO: input validation, error checking
+# TODO: handle timeouts
+# TODO: display packet size and destination
 
 def main():
     args = parse_args()
@@ -71,9 +74,11 @@ def files_to_dataframe(files: list[argparse.FileType]) -> pd.DataFrame:
     
     for file in files:
         pings = open(file.name, file.mode,encoding = file.encoding).read().split("\n")
-        pings = extract_pings(pings)
-        t0 = get_datetime(pings[0])
+        pings = extract_pings(pings)    
+        # extract response time from each line, matching "time=(\d*\.?\d*) ?ms"
         data[basename(file.name)] = [get_latency(ln) for ln in pings]
+        # extract times from each line
+        t0 = get_datetime(pings[0])
         times = [get_datetime(ln) - t0 for ln in pings]
         if len(times) > len(index): 
             index = times
@@ -87,12 +92,12 @@ def files_to_dataframe(files: list[argparse.FileType]) -> pd.DataFrame:
 
 def extract_pings(pings: list[str]) -> list[str]:
     # remove head until "Reply from" is matched
-    pings = list(dropwhile(lambda ln: "Reply from" not in ln, pings))
+    pings = list(dropwhile(lambda ln: not bool(re.search("time=(\d*\.?\d*) ?ms", ln)), pings))
     # TODO: make readable
     # remove tail until "Reply from" is matched
     n = len(pings)
     i = n - 1
-    while "Reply from" not in pings[i]:
+    while not bool(re.search("time=(\d*\.?\d*) ?ms", pings[i])):
         pings.pop(i)
         i -=  1
     lines_to_delete = len(pings) - 1 - i
@@ -102,8 +107,8 @@ def extract_pings(pings: list[str]) -> list[str]:
 def get_datetime(ping: str) -> datetime:
     return datetime.datetime.strptime(ping[0:19], "%d.%m.%Y %H:%M:%S")
 
-def get_latency(ping: str) -> int:
-    return int(re.search("time=(\d*)", ping).group(1))
+def get_latency(ping: str) -> float:
+    return float(re.search("time=(\d*\.?\d*) ?ms", ping).group(1))
 
 def describe(df: pd.DataFrame, include = 'all') -> pd.DataFrame:
     if include == 'all':
@@ -125,10 +130,12 @@ def describe(df: pd.DataFrame, include = 'all') -> pd.DataFrame:
             "90%": f"{df[col].quantile(.9)} ms",
             "95%": f"{df[col].quantile(.95)} ms",
         }
-    return pd.DataFrame.from_dict(desc)
+    # using orient = "index" and transpose() to preserve order
+    return pd.DataFrame.from_dict(desc, orient = "index").transpose()
 
 def plot_latencies(latencies: pd.DataFrame, ewm_window: float = 20, plots: str = "single") -> plt:
     # TODO: dont plot NaN values as 0
+    # TODO: dynamic table size based on number of columns
     desc = describe(latencies)
 
     if plots == "multi":
@@ -145,14 +152,11 @@ def plot_latencies(latencies: pd.DataFrame, ewm_window: float = 20, plots: str =
     )
     
     fig.suptitle(f"ping statistics: moving average = {ewm_window} s", fontsize = 16)
-
     linewidth = 0.75
-
     # single chart
     if n == 1: 
         create_plot(axes[0], latencies, ewm_window, linewidth)
         create_table(axes[1], desc)
-
     # multiple charts
     else: 
         cols = list(latencies.columns.values)
