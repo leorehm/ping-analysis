@@ -138,7 +138,8 @@ def create_plot(latencies: pd.DataFrame, ewm_window: int = 20, plots: str = "sin
     fig, axes = plt.subplots(
         nrows = n, ncols = 2,
         figsize = (16, 5 * n), 
-        constrained_layout=True, 
+        constrained_layout = True, 
+        sharey = True,
         gridspec_kw={"width_ratios": [8, 1]}
     )
 
