@@ -146,7 +146,6 @@ def plot_multi(latencies: pd.DataFrame, ewm_window: int = 20) -> plt:
         latencies[col].ewm(span = 5).mean().plot(
             ax = axes[i, 0], 
             alpha = 0.7, 
-            label = "10s average",
             linewidth = 0.75
         )
         
