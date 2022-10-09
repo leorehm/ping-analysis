@@ -18,10 +18,15 @@ A simple script to analyze and display ping statistics from one or more ping tra
     --ma-window MA_WINDOW
                             moving-average window in seconds; default = 20
 
-
 # Ping Transcipt in PowerShell
     Start-Transcript -path .\ping-log.txt -Append; ping -t <host> | % {"{0} - {1}" -f (Get-Date),$_}
 
 - add `-S <ip>` to use via a specific interface in windows
 - Exit the ping with `<Ctrl-C>`#
 - Stop the transcript with `Stop-Transcript` or close the powershell window
+
+# Example
+    python .\example\ping-analysis.py .\example\ping-eth0.txt .\ping-wifi.txt -p both -o .\example\single.png .\example\mult.png
+
+![Single Graph](/example/single.png "Single Graph")
+![Multi Graph](/example/multi.png "Multi Graph")
