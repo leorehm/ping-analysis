@@ -169,6 +169,7 @@ def create_plot(axis: plt.axis, df: pd.DataFrame, ewm_window: float = 20, linewi
         linewidth = linewidth
     )
     axis.set(xlabel = "△ t", ylabel = "latency in ms")
+    axis.tick_params(axis = "x", reset = True)
     axis.xaxis.set_major_formatter(ticker.FuncFormatter(time_ticks))
     axis.legend()
 
