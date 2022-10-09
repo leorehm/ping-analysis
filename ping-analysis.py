@@ -12,11 +12,10 @@ from matplotlib import ticker
 
 # TODO: UNIX/Linux support
 # TODO: input validation, error checking
-# TODO: type functions
 
 def main():
     args = parse_args()
-    latencies = read_files(args.file)
+    latencies = files_to_dataframe(args.file)
 
     plots = []
     if args.plot in ["single", "both"]:
@@ -65,7 +64,7 @@ def parse_args() -> argparse.Namespace:
     )
     return parser.parse_args()
 
-def read_files(files: list[argparse.FileType]) -> pd.DataFrame:
+def files_to_dataframe(files: list[argparse.FileType]) -> pd.DataFrame:
     data = {}
     index = []
     
@@ -113,23 +112,23 @@ def describe(df: pd.DataFrame, include = 'all') -> pd.DataFrame:
     desc = {}
     for col in cols: 
         desc[col] = {
+            "count": str(df[col].count()),
             "△ t": str(df[col].last_valid_index()).split( )[-1],
-            "count": df[col].count(),
-            "mean": df[col].mean(skipna = True).round(2),
-            "median": df[col].median(skipna=True),
-            "std": df[col].std(skipna=True).round(2),
-            "min": df[col].min(skipna=True),
-            "max": df[col].max(skipna=True),
-            "25%": df[col].quantile(.25),
-            "75%": df[col].quantile(.75),
-            "90%": df[col].quantile(.9),
-            "95%": df[col].quantile(.95),
+            "mean": f"{df[col].mean(skipna = True).round(2)} ms",
+            "median": f"{df[col].median(skipna=True)} ms",
+            "std": f"{df[col].std(skipna=True).round(2)} ms",
+            "min": f"{df[col].min(skipna=True)} ms",
+            "max": f"{df[col].max(skipna=True)} ms",
+            "25%": f"{df[col].quantile(.25)} ms",
+            "75%": f"{df[col].quantile(.75)} ms",
+            "90%": f"{df[col].quantile(.9)} ms",
+            "95%": f"{df[col].quantile(.95)} ms",
         }
     return pd.DataFrame.from_dict(desc)
 
 def create_plot(latencies: pd.DataFrame, ewm_window: int = 20, plots: str = "single") -> plt:
+    # TODO: dont plot NaN values as 0
     desc = describe(latencies)
-    cols = list(latencies.columns.values)
 
     if plots == "multi":
         n = latencies.shape[1]
@@ -146,12 +145,15 @@ def create_plot(latencies: pd.DataFrame, ewm_window: int = 20, plots: str = "sin
     fig.suptitle(f"ping statistics: moving average = {ewm_window} s", fontsize = 16)
     xformatter = ticker.FuncFormatter(timeTicks)
 
+    linewidth = 0.75
+
     # single chart
     if n == 1: 
-        latencies.ewm(span = ewm_window).mean().plot(
+        latencies.ewm(span = ewm_window, ignore_na = True).mean().plot(
             ax = axes[0], 
             alpha = 0.7,
-            linewidth = 0.75
+            linewidth = linewidth,
+
         )
         axes[0].set(xlabel = "△ t", ylabel = "latency in ms")
         axes[0].xaxis.set_major_formatter(xformatter)
@@ -169,11 +171,12 @@ def create_plot(latencies: pd.DataFrame, ewm_window: int = 20, plots: str = "sin
         axes[1].axis("off")
     # multiple charts
     else: 
+        cols = list(latencies.columns.values)
         for i, col in enumerate(cols):
-            latencies[col].ewm(span = 5).mean().plot(
+            latencies[col].ewm(span = ewm_window, ignore_na = True).mean().plot(
                 ax = axes[i, 0], 
                 alpha = 0.7, 
-                linewidth = 0.75
+                linewidth = linewidth
             )
             axes[i, 0].xaxis.set_major_formatter(xformatter)
             axes[i, 0].set(xlabel = "△ t", ylabel = "latency in ms", title = col)

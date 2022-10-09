@@ -26,7 +26,7 @@ A simple script to analyze and display ping statistics from one or more ping tra
 - Stop the transcript with `Stop-Transcript` or close the powershell window
 
 ## Example
-Comparing a powerline ehternet adapter to wifi - seems to be working surprisingly well
+Comparing a powerline ehternet adapter to wifi - powerline seems to be working surprisingly well
 
     python3 .\ping-analysis.py .\example\ping-eth0.txt .\example\ping-wlan0.txt -p both -o .\example\single.png .\example\multi.png
 
