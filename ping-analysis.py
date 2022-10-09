@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 
 import sys
 from os.path import basename
@@ -12,8 +12,32 @@ from matplotlib import ticker
 
 # TODO: UNIX/Linux support
 # TODO: input validation, error checking
+# TODO: type functions
 
 def main():
+    args = parse_args()
+    latencies = read_files(args.file)
+
+    plots = []
+    if args.plot in ["single", "both"]:
+        # plots.append(plot_single(latencies, args.ma_window))
+        plots.append(create_plot(latencies, args.ma_window, "single"))
+    if args.plot in ["multi", "both"]:
+        # plots.append(plot_multi(latencies, args.ma_window))
+        plots.append(create_plot(latencies, args.ma_window, "multi"))
+
+    if args.out and len(args.out) != len(plots):
+        sys.exit("error: number of plots doesnt match number of out-files specified")
+
+    for plot in plots:
+        if args.out:
+            plot.savefig(args.out.pop().name)
+            plot.close()
+            continue
+        plot.show()
+        plot.close()
+
+def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "file", 
@@ -39,28 +63,9 @@ def main():
         type = int,
         help = "moving-average window in seconds; default = 20"
     )
-    args = parser.parse_args()
-    latencies = read_files(args.file)
+    return parser.parse_args()
 
-    plots = []
-    if args.plot in ["single", "both"]:
-        plots.append(plot_single(latencies, args.ma_window))
-    if args.plot in ["multi", "both"]:
-        plots.append(plot_multi(latencies, args.ma_window))
-
-    if args.out and len(args.out) != len(plots):
-        sys.exit("error: number of plots doesnt match number of out-files specified")
-
-    for plot in plots:
-        if args.out:
-            plot.savefig(args.out.pop().name)
-            plot.close()
-            continue
-        plot.show()
-        plot.close()
-
-
-def read_files(files) -> pd.DataFrame:
+def read_files(files: list[argparse.FileType]) -> pd.DataFrame:
     data = {}
     index = []
     
@@ -80,9 +85,10 @@ def read_files(files) -> pd.DataFrame:
     latencies = latencies.set_index("index", drop=True)
     return latencies
 
-def extract_pings(pings):
+def extract_pings(pings: list[str]) -> list[str]:
     # remove head until "Reply from" is matched
     pings = list(dropwhile(lambda ln: "Reply from" not in ln, pings))
+    # TODO: make readable
     # remove tail until "Reply from" is matched
     n = len(pings)
     i = n - 1
@@ -93,10 +99,10 @@ def extract_pings(pings):
     pings[-lines_to_delete:lines_to_delete and None] = []
     return pings
 
-def get_datetime(ping) -> int:
+def get_datetime(ping: str) -> datetime:
     return datetime.datetime.strptime(ping[0:19], "%d.%m.%Y %H:%M:%S")
 
-def get_latency(ping) -> int:
+def get_latency(ping: str) -> int:
     return int(re.search("time=(\d*)", ping).group(1))
 
 def describe(df: pd.DataFrame, include = 'all') -> pd.DataFrame:
@@ -107,95 +113,83 @@ def describe(df: pd.DataFrame, include = 'all') -> pd.DataFrame:
     desc = {}
     for col in cols: 
         desc[col] = {
+            "△ t": str(df[col].last_valid_index()).split( )[-1],
             "count": df[col].count(),
             "mean": df[col].mean(skipna = True).round(2),
             "median": df[col].median(skipna=True),
             "std": df[col].std(skipna=True).round(2),
             "min": df[col].min(skipna=True),
             "max": df[col].max(skipna=True),
-            "05%": df[col].quantile(.05),
-            "01%": df[col].quantile(.1),
+            "25%": df[col].quantile(.25),
             "75%": df[col].quantile(.75),
             "90%": df[col].quantile(.9),
             "95%": df[col].quantile(.95),
         }
     return pd.DataFrame.from_dict(desc)
 
-def plot_multi(latencies: pd.DataFrame, ewm_window: int = 20) -> plt:
-    n = latencies.shape[1]
+def create_plot(latencies: pd.DataFrame, ewm_window: int = 20, plots: str = "single") -> plt:
+    desc = describe(latencies)
     cols = list(latencies.columns.values)
-    desc = describe(latencies)    
+
+    if plots == "multi":
+        n = latencies.shape[1]
+    elif plots == "single":
+        n = 1
     
     fig, axes = plt.subplots(
-        nrows = n, ncols = 2, 
-        sharey = True,
-        figsize = (16, 10), 
+        nrows = n, ncols = 2,
+        figsize = (16, 5 * n), 
         constrained_layout=True, 
         gridspec_kw={"width_ratios": [8, 1]}
     )
 
     fig.suptitle(f"ping statistics: moving average = {ewm_window} s", fontsize = 16)
+    xformatter = ticker.FuncFormatter(timeTicks)
 
-    for i, col in enumerate(cols):
-        # latencies[col].plot(
-        #     ax = axes[i, 0], 
-        #     alpha = 0.5, 
-        #     label = "latency in ms", 
-        #     linewidth = 0.75
-        # )
-        latencies[col].ewm(span = 5).mean().plot(
-            ax = axes[i, 0], 
-            alpha = 0.7, 
+    # single chart
+    if n == 1: 
+        latencies.ewm(span = ewm_window).mean().plot(
+            ax = axes[0], 
+            alpha = 0.7,
             linewidth = 0.75
         )
-        
-        axes[i, 0].xaxis.set_major_formatter(ticker.FuncFormatter(timeTicks))
-        axes[i, 0].set(xlabel = "time", ylabel = "latency in ms", title = col)
-        axes[i, 0].legend()
-        
-        colinfo = pd.DataFrame(desc[col])
+        axes[0].set(xlabel = "△ t", ylabel = "latency in ms")
+        axes[0].xaxis.set_major_formatter(xformatter)
+
         # TODO: table creation as seperate function
-        tab = axes[i, 1].table( 
-            cellText = colinfo.values, 
-            rowLabels = colinfo.index, 
+        tab = axes[1].table( 
+            cellText = desc.values, 
+            rowLabels = desc.index, 
+            colLabels = desc.columns,
             loc = "center", 
             cellLoc = "center",
             edges = "open"
         )
         tab.scale(1.4, 1.4)
-        axes[i, 1].axis("off")
-    
-    return plt
-
-def plot_single(latencies: pd.DataFrame, ewm_window: int = 20):
-    cols = list(latencies.columns.values)
-    desc = describe(latencies)
-
-    fig, axes = plt.subplots(
-        nrows = 1, ncols = 2, 
-        figsize = (16, 10 / 2), 
-        constrained_layout=True, 
-        gridspec_kw={"width_ratios": [8, 1]}
-    )
-    latencies.ewm(span = ewm_window).mean().plot(
-        ax = axes[0], 
-        alpha = 0.7,
-        linewidth = 0.75
-    )
-    fig.suptitle(f"ping statistics: moving average = {ewm_window} s", fontsize = 16)
-    axes[0].xaxis.set_major_formatter(ticker.FuncFormatter(timeTicks))
-
-    # TODO: table creation as seperate function
-    tab = axes[1].table( 
-        cellText = desc.values, 
-        rowLabels = desc.index, 
-        colLabels = desc.columns,
-        loc = "center", 
-        cellLoc = "center",
-        edges = "open"
-    )
-    tab.scale(1.4, 1.4)
-    axes[1].axis("off")
+        axes[1].axis("off")
+    # multiple charts
+    else: 
+        for i, col in enumerate(cols):
+            latencies[col].ewm(span = 5).mean().plot(
+                ax = axes[i, 0], 
+                alpha = 0.7, 
+                linewidth = 0.75
+            )
+            axes[i, 0].xaxis.set_major_formatter(xformatter)
+            axes[i, 0].set(xlabel = "△ t", ylabel = "latency in ms", title = col)
+            axes[i, 0].legend()
+            
+            colinfo = pd.DataFrame(desc[col])
+            # TODO: table creation as seperate function
+            tab = axes[i, 1].table( 
+                cellText = colinfo.values, 
+                rowLabels = colinfo.index, 
+                loc = "center", 
+                cellLoc = "center",
+                edges = "open"
+            )
+            tab.scale(1.4, 1.4)
+            axes[i, 1].axis("off")
     
     return plt
 

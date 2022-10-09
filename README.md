@@ -2,7 +2,7 @@
 A simple script to analyze and display ping statistics from one or more ping transcripts. Examplary PowerShell ping transcripts included. Linux currently not supported. 
 
 ## Usage
-    $ python .\ping-analysis.py -h
+    $ python3 .\ping-analysis.py -h
     usage: ping-analysis.py [-h] [-p {single,mult,both}] [-o OUT [OUT ...]] [--ma-window MA_WINDOW]
                             file [file ...]
 
@@ -28,7 +28,7 @@ A simple script to analyze and display ping statistics from one or more ping tra
 ## Example
 Comparing a powerline ehternet adapter to wifi - seems to be working surprisingly well
 
-    python .\ping-analysis.py .\example\ping-eth0.txt .\example\ping-wlan0.txt -p both -o .\example\single.png .\example\multi.png
+    python3 .\ping-analysis.py .\example\ping-eth0.txt .\example\ping-wlan0.txt -p both -o .\example\single.png .\example\multi.png
 
 ![Single Graph](/example/single.png "Single Graph")
 
