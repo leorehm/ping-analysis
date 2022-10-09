@@ -11,8 +11,8 @@ A simple script to analyze and display ping statistics from one or more ping tra
 
     options:
     -h, --help            show this help message and exit
-    -p {single,mult,both}, --plot {single,mult,both}
-                            plot type: (single|mult|both); default = single
+    -p {single,multi,both}, --plot {single,mult,both}
+                            plot type: (single|multi|both); default = single
     -o OUT [OUT ...], --out OUT [OUT ...]
                             save plot to file; enter two paths when using "-p both"
     --ma-window MA_WINDOW
@@ -29,4 +29,5 @@ A simple script to analyze and display ping statistics from one or more ping tra
     python .\example\ping-analysis.py .\example\ping-eth0.txt .\ping-wifi.txt -p both -o .\example\single.png .\example\mult.png
 
 ![Single Graph](/example/single.png "Single Graph")
-![Multi Graph](/example/multi.png "Multi Graph")
+
+![Multiple Graphs](/example/multi.png "Multiple Graphs")

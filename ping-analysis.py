@@ -24,8 +24,8 @@ def main():
     parser.add_argument(
         "-p", "--plot", 
         default = "single", 
-        choices = ["single", "mult", "both"],
-        help = "plot type: (single|mult|both); default = single"
+        choices = ["single", "multi", "both"],
+        help = "plot type: (single|multi|both); default = single"
     )
     parser.add_argument(
         "-o", "--out", 
@@ -45,8 +45,8 @@ def main():
     plots = []
     if args.plot in ["single", "both"]:
         plots.append(plot_single(latencies, args.ma_window))
-    if args.plot in ["mult", "both"]:
-        plots.append(plot_mult(latencies, args.ma_window))
+    if args.plot in ["multi", "both"]:
+        plots.append(plot_multi(latencies, args.ma_window))
 
     if args.out and len(args.out) != len(plots):
         sys.exit("error: number of plots doesnt match number of out-files specified")
@@ -121,7 +121,7 @@ def describe(df: pd.DataFrame, include = 'all') -> pd.DataFrame:
         }
     return pd.DataFrame.from_dict(desc)
 
-def plot_mult(latencies: pd.DataFrame, ewm_window: int = 20) -> plt:
+def plot_multi(latencies: pd.DataFrame, ewm_window: int = 20) -> plt:
     n = latencies.shape[1]
     cols = list(latencies.columns.values)
     desc = describe(latencies)    
