@@ -20,10 +20,10 @@ def main():
     plots = []
     if args.plot in ["single", "both"]:
         # plots.append(plot_single(latencies, args.ma_window))
-        plots.append(create_plot(latencies, args.ma_window, "single"))
+        plots.append(plot_latencies(latencies, args.ma_window, "single"))
     if args.plot in ["multi", "both"]:
         # plots.append(plot_multi(latencies, args.ma_window))
-        plots.append(create_plot(latencies, args.ma_window, "multi"))
+        plots.append(plot_latencies(latencies, args.ma_window, "multi"))
 
     if args.out and len(args.out) != len(plots):
         sys.exit("error: number of plots doesnt match number of out-files specified")
@@ -59,8 +59,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--ma-window", 
         default = 20, 
-        type = int,
+        type = float,
         help = "moving-average window in seconds; default = 20"
+        # = ewm_window internally
     )
     return parser.parse_args()
 
@@ -126,7 +127,7 @@ def describe(df: pd.DataFrame, include = 'all') -> pd.DataFrame:
         }
     return pd.DataFrame.from_dict(desc)
 
-def create_plot(latencies: pd.DataFrame, ewm_window: int = 20, plots: str = "single") -> plt:
+def plot_latencies(latencies: pd.DataFrame, ewm_window: float = 20, plots: str = "single") -> plt:
     # TODO: dont plot NaN values as 0
     desc = describe(latencies)
 
@@ -137,67 +138,59 @@ def create_plot(latencies: pd.DataFrame, ewm_window: int = 20, plots: str = "sin
     
     fig, axes = plt.subplots(
         nrows = n, ncols = 2,
-        figsize = (16, 5 * n), 
+        figsize = (16, 5 * n), # width = 16 inches, height = 5 inches per row
         constrained_layout = True, 
         sharey = True,
-        gridspec_kw={"width_ratios": [8, 1]}
+        gridspec_kw={"width_ratios": [9, 1]}
     )
-
+    
     fig.suptitle(f"ping statistics: moving average = {ewm_window} s", fontsize = 16)
-    xformatter = ticker.FuncFormatter(timeTicks)
 
     linewidth = 0.75
 
     # single chart
     if n == 1: 
-        latencies.ewm(span = ewm_window, ignore_na = True).mean().plot(
-            ax = axes[0], 
-            alpha = 0.7,
-            linewidth = linewidth,
+        create_plot(axes[0], latencies, ewm_window, linewidth)
+        create_table(axes[1], desc)
 
-        )
-        axes[0].set(xlabel = "△ t", ylabel = "latency in ms")
-        axes[0].xaxis.set_major_formatter(xformatter)
-
-        # TODO: table creation as seperate function
-        tab = axes[1].table( 
-            cellText = desc.values, 
-            rowLabels = desc.index, 
-            colLabels = desc.columns,
-            loc = "center", 
-            cellLoc = "center",
-            edges = "open"
-        )
-        tab.scale(1.4, 1.4)
-        axes[1].axis("off")
     # multiple charts
     else: 
         cols = list(latencies.columns.values)
         for i, col in enumerate(cols):
-            latencies[col].ewm(span = ewm_window, ignore_na = True).mean().plot(
-                ax = axes[i, 0], 
-                alpha = 0.7, 
-                linewidth = linewidth
-            )
-            axes[i, 0].xaxis.set_major_formatter(xformatter)
-            axes[i, 0].set(xlabel = "△ t", ylabel = "latency in ms", title = col)
-            axes[i, 0].legend()
-            
-            colinfo = pd.DataFrame(desc[col])
-            # TODO: table creation as seperate function
-            tab = axes[i, 1].table( 
-                cellText = colinfo.values, 
-                rowLabels = colinfo.index, 
-                loc = "center", 
-                cellLoc = "center",
-                edges = "open"
-            )
-            tab.scale(1.4, 1.4)
-            axes[i, 1].axis("off")
-    
+            create_plot(axes[i, 0], latencies[col], ewm_window, linewidth)
+            create_table(axes[i, 1], pd.DataFrame(desc[col]))
+
     return plt
 
-def timeTicks(x, pos):
+def create_plot(axis: plt.axis, df: pd.DataFrame, ewm_window: float = 20, linewidth: int = 0.75) -> plt.plot:
+    plot = df.ewm(span = ewm_window, ignore_na = True).mean().plot(
+        ax = axis, 
+        alpha = 0.7, 
+        linewidth = linewidth
+    )
+    axis.set(xlabel = "△ t", ylabel = "latency in ms")
+    axis.xaxis.set_major_formatter(ticker.FuncFormatter(time_ticks))
+    axis.legend()
+
+    return plot
+
+def create_table(axis: plt.axis, df: pd.DataFrame) -> plt.table:
+    tab = axis.table( 
+        cellText = df.values, 
+        rowLabels = df.index, 
+        colLabels = df.columns,
+        loc = "center", 
+        cellLoc = "right",
+        colLoc = "right",
+        edges = "open",
+        fontsize = 12
+    )
+    tab.scale(1.4, 1.4)
+    axis.axis("off")
+    
+    return tab
+
+def time_ticks(x, pos):
     return str(datetime.timedelta(seconds=x))
 
 if __name__ ==  "__main__":

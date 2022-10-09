@@ -3,15 +3,14 @@ A simple script to analyze and display ping statistics from one or more ping tra
 
 ## Usage
     $ python3 .\ping-analysis.py -h
-    usage: ping-analysis.py [-h] [-p {single,mult,both}] [-o OUT [OUT ...]] [--ma-window MA_WINDOW]
-                            file [file ...]
+    usage: ping-analysis.py [-h] [-p {single,multi,both}] [-o OUT [OUT ...]] [--ma-window MA_WINDOW] file [file ...]
 
     positional arguments:
     file                  one or more files to be read
 
     options:
     -h, --help            show this help message and exit
-    -p {single,multi,both}, --plot {single,mult,both}
+    -p {single,multi,both}, --plot {single,multi,both}
                             plot type: (single|multi|both); default = single
     -o OUT [OUT ...], --out OUT [OUT ...]
                             save plot to file; enter two paths when using "-p both"
