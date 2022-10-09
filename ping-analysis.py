@@ -1,29 +1,64 @@
 #!/usr/bin/python
 
-import argparse
+import sys
 from os.path import basename
+import argparse
 from itertools import dropwhile
 import re
 import datetime
+import pandas as pd
 from matplotlib import pyplot as plt
 from matplotlib import ticker
-import pandas as pd
+
+# TODO: UNIX/Linux support
+# TODO: input validation, error checking
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("file", type = argparse.FileType("r"), nargs = "+", help = "one or more files to be read")
+    parser.add_argument(
+        "file", 
+        type = argparse.FileType("r"), 
+        nargs = "+", 
+        help = "one or more files to be read"
+    )
+    parser.add_argument(
+        "-p", "--plot", 
+        default = "single", 
+        choices = ["single", "mult", "both"],
+        help = "plot type: (single|mult|both); default = single"
+    )
+    parser.add_argument(
+        "-o", "--out", 
+        type = argparse.FileType("w"),
+        nargs = "+",
+        help = 'save plot to file; enter two paths when using "-p both"'
+    )
+    parser.add_argument(
+        "--ma-window", 
+        default = 20, 
+        type = int,
+        help = "moving-average window in seconds; default = 20"
+    )
     args = parser.parse_args()
-
     latencies = read_files(args.file)
-    print(describe(latencies))
-    print(latencies.head(2), "\n", latencies.tail(2))
-    
+
     plots = []
-    plots.append(plot_mult(latencies))
-    plots.append(single = plot_single(latencies))
+    if args.plot in ["single", "both"]:
+        plots.append(plot_single(latencies, args.ma_window))
+    if args.plot in ["mult", "both"]:
+        plots.append(plot_mult(latencies, args.ma_window))
+
+    if args.out and len(args.out) != len(plots):
+        sys.exit("error: number of plots doesnt match number of out-files specified")
 
     for plot in plots:
+        if args.out:
+            plot.savefig(args.out.pop().name)
+            plot.close()
+            continue
         plot.show()
+        plot.close()
+
 
 def read_files(files) -> pd.DataFrame:
     data = {}
@@ -90,8 +125,6 @@ def plot_mult(latencies: pd.DataFrame, ewm_window: int = 20) -> plt:
     n = latencies.shape[1]
     cols = list(latencies.columns.values)
     desc = describe(latencies)    
-    
-    plt.title(label = f"ping statistics - moving average = {ewm_window} s")
     
     fig, axes = plt.subplots(
         nrows = n, ncols = 2, 

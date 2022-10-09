@@ -1,16 +1,16 @@
 **********************
 PowerShell transcript start
 Start time: 20221008145945
-Username: LEOPCWIN11\leore
-RunAs User: LEOPCWIN11\leore
+Username: 
+RunAs User: 
 Configuration Name: 
-Machine: LEOPCWIN11 (Microsoft Windows NT 10.0.22000.0)
+Machine: 
 Host Application: C:\Program Files\PowerShell\7\pwsh.dll
 Process ID: 15312
 PSVersion: 7.2.6
 PSEdition: Core
 GitCommitId: 7.2.6
-OS: Microsoft Windows 10.0.22000
+OS: 
 Platform: Win32NT
 PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.10032.0, 6.0.0, 6.1.0, 6.2.0, 7.0.0, 7.1.0, 7.2.6
 PSRemotingProtocolVersion: 2.3
@@ -18,9 +18,6 @@ SerializationVersion: 1.1.0.1
 WSManStackVersion: 3.0
 **********************
 Transcript started, output file is ./ping-wifi.txt
-[K[0J
-# leore @ leopcwin11 in ~ [14:59:45][K[0J
-$[K[0J
 PS>ping 192.168.178.1 -t -S 192.168.178.62 | ForEach {"{0} - {1}" -f (Get-Date),$_}
 08.10.2022 14:59:59 -
 08.10.2022 14:59:59 - Pinging 192.168.178.1 from 192.168.178.62 with 32 bytes of data:
@@ -9103,9 +9100,6 @@ PS>ping 192.168.178.1 -t -S 192.168.178.62 | ForEach {"{0} - {1}" -f (Get-Date),
 08.10.2022 17:32:41 -
 >> TerminatingError(): "The pipeline has been stopped."
 >> TerminatingError(): "The pipeline has been stopped."
-[K[0J
-# leore @ leopcwin11 in ~ [17:32:42][K[0J
-$[K[0J
 **********************
 PowerShell transcript end
 End time: 20221008173245
