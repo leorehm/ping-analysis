@@ -26,7 +26,7 @@ A simple script to analyze and display ping statistics from one or more ping tra
 - Stop the transcript with `Stop-Transcript` or close the powershell window
 
 # Example
-    python .\ping-analysis.py .\example\ping-eth0.txt .\example\ping-wlan0.txt -p both -o .\example\single.png .\example\mult.png
+    python .\ping-analysis.py .\example\ping-eth0.txt .\example\ping-wlan0.txt -p both -o .\example\single.png .\example\multi.png
 
 ![Single Graph](/example/single.png "Single Graph")
 
